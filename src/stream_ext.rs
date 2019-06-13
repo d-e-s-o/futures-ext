@@ -6,6 +6,7 @@ use std::result::Result;
 use futures::future::IntoFuture;
 use futures::stream::Stream;
 
+use crate::fold_results::FoldedResults;
 use crate::for_each_result::ForEachResult;
 
 
@@ -17,6 +18,15 @@ pub trait StreamExt {
     R: IntoFuture<Item = (), Error = ()>,
   {
     ForEachResult::new(self, f)
+  }
+
+  fn fold_results<F, T, E, Fut>(self, init: Result<T, E>, f: F) -> FoldedResults<Self, F, Fut, T, E>
+  where
+    Self: Sized + Stream,
+    F: FnMut(Result<T, E>, Result<Self::Item, Self::Error>) -> Fut,
+    Fut: IntoFuture<Item = T, Error = E>,
+  {
+    FoldedResults::new(self, f, init)
   }
 }
 
